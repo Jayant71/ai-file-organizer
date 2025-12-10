@@ -103,6 +103,8 @@ export const FILE_CATEGORY_MAP: Record<string, FileCategory> = {
   '.wmv': 'videos',
   '.flv': 'videos',
   '.webm': 'videos',
+  '.m4v': 'videos',
+  '.3gp': 'videos',
   
   // Audio
   '.mp3': 'audio',
@@ -112,6 +114,10 @@ export const FILE_CATEGORY_MAP: Record<string, FileCategory> = {
   '.ogg': 'audio',
   '.wma': 'audio',
   '.m4a': 'audio',
+  '.opus': 'audio',
+  '.aiff': 'audio',
+  '.mid': 'audio',
+  '.midi': 'audio',
   
   // Archives
   '.zip': 'archives',
@@ -120,6 +126,9 @@ export const FILE_CATEGORY_MAP: Record<string, FileCategory> = {
   '.tar': 'archives',
   '.gz': 'archives',
   '.bz2': 'archives',
+  '.xz': 'archives',
+  '.iso': 'archives',
+  '.dmg': 'archives',
   
   // Code
   '.js': 'code',
@@ -131,6 +140,7 @@ export const FILE_CATEGORY_MAP: Record<string, FileCategory> = {
   '.c': 'code',
   '.cpp': 'code',
   '.h': 'code',
+  '.hpp': 'code',
   '.cs': 'code',
   '.go': 'code',
   '.rs': 'code',
@@ -141,11 +151,72 @@ export const FILE_CATEGORY_MAP: Record<string, FileCategory> = {
   '.html': 'code',
   '.css': 'code',
   '.scss': 'code',
+  '.sass': 'code',
+  '.less': 'code',
   '.json': 'code',
   '.xml': 'code',
   '.yaml': 'code',
   '.yml': 'code',
   '.md': 'code',
+  '.sql': 'code',
+  '.sh': 'code',
+  '.bash': 'code',
+  '.ps1': 'code',
+  '.bat': 'code',
+  '.vue': 'code',
+  '.svelte': 'code',
+  '.r': 'code',
+  '.scala': 'code',
+  '.lua': 'code',
+  '.pl': 'code',
+  '.dart': 'code',
+  '.elm': 'code',
+  '.ex': 'code',
+  '.exs': 'code',
+  '.ipynb': 'code',
+  
+  // Data files
+  '.db': 'other',
+  '.sqlite': 'other',
+  '.mdb': 'other',
+  '.accdb': 'other',
+  
+  // Ebooks
+  '.epub': 'documents',
+  '.mobi': 'documents',
+  '.azw': 'documents',
+  '.azw3': 'documents',
+  
+  // Fonts
+  '.ttf': 'other',
+  '.otf': 'other',
+  '.woff': 'other',
+  '.woff2': 'other',
+  '.eot': 'other',
+  
+  // Design files
+  '.psd': 'images',
+  '.ai': 'images',
+  '.sketch': 'images',
+  '.fig': 'images',
+  '.xd': 'images',
+  '.indd': 'documents',
+  
+  // 3D files
+  '.obj': 'other',
+  '.fbx': 'other',
+  '.stl': 'other',
+  '.blend': 'other',
+  '.max': 'other',
+  
+  // Executables
+  '.exe': 'other',
+  '.msi': 'other',
+  '.app': 'other',
+  '.deb': 'other',
+  '.rpm': 'other',
+  '.apk': 'other',
+  '.ipa': 'other',
 };
 
 /**

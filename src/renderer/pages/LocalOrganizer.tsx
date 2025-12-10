@@ -8,9 +8,10 @@ import { Button, Modal, LoadingSpinner, EmptyState } from '../components/common'
 import FileTable from '../components/file-table/FileTable';
 import PreviewPanel from '../components/file-table/PreviewPanel';
 import { useRules } from '../context/RulesContext';
+import { useSettings } from '../context/SettingsContext';
 import { FileMeta, FileChange /* OperationLogEntry */ } from '@/domain/types/file';
 import { RuleEngine } from '@/domain/rule-engine';
-import { getAISuggestions } from '@/services/ai-suggestion';
+import { getAISuggestions, aiSuggestionService } from '@/services/ai-suggestion';
 import { formatFileSize } from '@/services/config';
 
 export default function LocalOrganizer() {
@@ -21,6 +22,7 @@ export default function LocalOrganizer() {
     const [isScanning, setIsScanning] = useState(false);
     const [isApplying, setIsApplying] = useState(false);
     const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+    const [aiProgress, setAiProgress] = useState<string>('');
     const [includeSubdirectories, setIncludeSubdirectories] = useState(true);
     const [scanComplete, setScanComplete] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
@@ -28,6 +30,14 @@ export default function LocalOrganizer() {
     const [error, setError] = useState<string | null>(null);
 
     const { rules, getEnabledRules } = useRules();
+    const { settings } = useSettings();
+
+    // Configure AI service when settings change
+    React.useEffect(() => {
+        if (settings.aiConfig?.apiKey) {
+            aiSuggestionService.configure({ apiKey: settings.aiConfig.apiKey });
+        }
+    }, [settings.aiConfig?.apiKey]);
 
     // Select folder
     const handleSelectFolder = useCallback(async () => {
@@ -117,26 +127,43 @@ export default function LocalOrganizer() {
         if (files.length === 0) return;
 
         setIsGeneratingAI(true);
+        setAiProgress('Starting AI analysis...');
         setError(null);
 
         // Use setTimeout to let the UI update before heavy processing
         setTimeout(async () => {
             try {
                 const baseFolder = selectedFolders[0] || '';
-                const suggestions = await getAISuggestions(files, baseFolder);
+                const mode = settings.aiMode || 'smart';
+
+                const suggestions = await getAISuggestions(
+                    files,
+                    baseFolder,
+                    mode,
+                    settings.userPreferences,
+                    (progress) => {
+                        setAiProgress(progress.status);
+                    }
+                );
 
                 // Convert suggestions to FileChange format
                 const aiChanges: FileChange[] = suggestions.map((s) => {
                     const file = files.find((f) => f.id === s.fileId);
                     if (!file) return null;
 
+                    // Include duplicate and source info in the reason
+                    let reason = `AI (${s.source}): ${s.reason}`;
+                    if (s.isDuplicate) {
+                        reason += ' [DUPLICATE]';
+                    }
+
                     return {
                         file,
                         currentPath: file.path,
                         currentName: file.name,
                         proposedPath: s.proposedPath,
-                        proposedName: file.name,
-                        matchedRule: `AI: ${s.reason}`,
+                        proposedName: s.proposedName || file.name,
+                        matchedRule: reason,
                         matchedRuleId: 'ai-suggestion',
                         selected: s.selected,
                         status: 'pending' as const,
@@ -145,13 +172,15 @@ export default function LocalOrganizer() {
 
                 setChanges(aiChanges);
                 setShowPreview(true);
+                setAiProgress('');
             } catch (err: any) {
                 setError(`AI suggestions failed: ${err.message}`);
+                setAiProgress('');
             } finally {
                 setIsGeneratingAI(false);
             }
         }, 50);
-    }, [files, selectedFolders]);
+    }, [files, selectedFolders, settings.aiMode, settings.userPreferences]);
 
     // Toggle change selection
     const handleToggleChange = useCallback((index: number) => {
@@ -400,7 +429,10 @@ export default function LocalOrganizer() {
                             isLoading={isGeneratingAI}
                             disabled={isGeneratingAI}
                         >
-                            {isGeneratingAI ? 'Generating...' : '✨ AI Suggestions'}
+                            {isGeneratingAI
+                                ? (aiProgress || 'Generating...')
+                                : `✨ AI (${settings.aiMode === 'quick' ? 'Quick' : settings.aiMode === 'deep' ? 'Deep' : 'Smart'})`
+                            }
                         </Button>
                     </div>
 

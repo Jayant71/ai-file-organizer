@@ -5,6 +5,8 @@
  * Settings are persisted using electron-store.
  */
 
+import type { AIMode, UserOrganizationPreferences } from '@/domain/types/ai';
+
 /**
  * Application settings structure.
  */
@@ -19,6 +21,10 @@ export interface AppSettings {
   theme: 'light' | 'dark' | 'system';
   /** Whether this is the first run */
   firstRun: boolean;
+  /** AI organization mode */
+  aiMode: AIMode;
+  /** User organization preferences */
+  userPreferences: UserOrganizationPreferences;
   /** AI service configuration */
   aiConfig: {
     provider: 'heuristic' | 'openai' | 'anthropic' | 'local-llm';
@@ -37,6 +43,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
   previewByDefault: true,
   theme: 'system',
   firstRun: true,
+  aiMode: 'smart',
+  userPreferences: {
+    cleanlinessLevel: 'moderate',
+    safetyPreference: 'balanced',
+    accessPriority: 'organized',
+    organizationStyle: 'by-category',
+    aiSourcePreference: 'heuristics-preferred',
+  },
   aiConfig: {
     provider: 'heuristic',
   },
@@ -56,9 +70,9 @@ export const FILE_SIZE_UNITS = {
  */
 export const COMMON_FOLDERS = {
   windows: {
-    downloads: '%USERPROFILE%\\Downloads',
-    desktop: '%USERPROFILE%\\Desktop',
-    documents: '%USERPROFILE%\\Documents',
+    downloads: '%USERPROFILE%\\\\Downloads',
+    desktop: '%USERPROFILE%\\\\Desktop',
+    documents: '%USERPROFILE%\\\\Documents',
   },
   macos: {
     downloads: '~/Downloads',
@@ -83,6 +97,7 @@ export const IPC_CHANNELS = {
   FS_RENAME_FILE: 'fs:rename-file',
   FS_CREATE_FOLDER: 'fs:create-folder',
   FS_CHECK_PATH_EXISTS: 'fs:check-path-exists',
+  FS_READ_FILE_SAMPLE: 'fs:read-file-sample',
 
   // Google Drive operations
   DRIVE_AUTH: 'drive:auth',

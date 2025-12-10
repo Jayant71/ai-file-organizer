@@ -134,6 +134,43 @@ export function registerFilesystemHandlers(): void {
     return pathExists(checkPath);
   });
 
+  // Read file sample (first 1KB for content analysis)
+  ipcMain.handle(
+    IPC_CHANNELS.FS_READ_FILE_SAMPLE,
+    async (_, filePath: string, maxBytes: number = 1024) => {
+      try {
+        // Only read text-based files
+        const ext = path.extname(filePath).toLowerCase();
+        const textExtensions = ['.txt', '.md', '.json', '.csv', '.log', '.xml', '.yaml', '.yml', '.js', '.ts', '.py', '.html', '.css'];
+        
+        if (!textExtensions.includes(ext)) {
+          return { success: true, content: null, reason: 'Not a text file' };
+        }
+
+        const stats = await fs.stat(filePath);
+        
+        // Skip large files
+        if (stats.size > 500 * 1024) { // 500KB limit
+          return { success: true, content: null, reason: 'File too large for sampling' };
+        }
+
+        const fileHandle = await fs.open(filePath, 'r');
+        const buffer = Buffer.alloc(Math.min(maxBytes, stats.size));
+        await fileHandle.read(buffer, 0, buffer.length, 0);
+        await fileHandle.close();
+
+        return { 
+          success: true, 
+          content: buffer.toString('utf-8'),
+          size: stats.size,
+        };
+      } catch (error: any) {
+        console.error('Error reading file sample:', error);
+        return { success: false, error: error.message };
+      }
+    }
+  );
+
   // Get app version
   ipcMain.handle(IPC_CHANNELS.APP_GET_VERSION, () => {
     return app.getVersion();

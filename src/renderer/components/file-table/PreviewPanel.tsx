@@ -3,7 +3,7 @@
  * Shows proposed changes before applying them.
  */
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { FileChange } from '@/domain/types/file';
 import { Button } from '../common';
 
@@ -24,6 +24,25 @@ export default function PreviewPanel({
     onClose,
     isApplying,
 }: PreviewPanelProps) {
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Filter changes based on search query
+    const filteredChanges = useMemo(() => {
+        if (!searchQuery.trim()) return changes;
+        const query = searchQuery.toLowerCase();
+        return changes.filter(c =>
+            c.currentName.toLowerCase().includes(query) ||
+            c.currentPath.toLowerCase().includes(query) ||
+            c.proposedPath.toLowerCase().includes(query) ||
+            c.matchedRule?.toLowerCase().includes(query)
+        );
+    }, [changes, searchQuery]);
+
+    // Get original index for toggle callback
+    const getOriginalIndex = (change: FileChange) => {
+        return changes.findIndex(c => c.file.id === change.file.id);
+    };
+
     const selectedCount = changes.filter((c) => c.selected).length;
     const pendingCount = changes.filter((c) => c.status === 'pending').length;
     const allSelected = selectedCount === changes.length;
@@ -45,26 +64,48 @@ export default function PreviewPanel({
     return (
         <div className="card border-2 border-primary-500/30">
             {/* Header */}
-            <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <div>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-                        📋 Preview Changes
-                    </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {selectedCount} of {changes.length} changes selected
-                    </p>
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                            📋 Preview Changes
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                            {selectedCount} of {changes.length} changes selected
+                            {searchQuery && ` (showing ${filteredChanges.length})`}
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            onClick={() => onToggleAll(!allSelected)}
+                            variant="ghost"
+                            size="sm"
+                        >
+                            {allSelected ? 'Deselect All' : 'Select All'}
+                        </Button>
+                        <Button onClick={onClose} variant="ghost" size="sm">
+                            ✕
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <Button
-                        onClick={() => onToggleAll(!allSelected)}
-                        variant="ghost"
-                        size="sm"
-                    >
-                        {allSelected ? 'Deselect All' : 'Select All'}
-                    </Button>
-                    <Button onClick={onClose} variant="ghost" size="sm">
-                        ✕
-                    </Button>
+
+                {/* Search Input */}
+                <div className="relative">
+                    <input
+                        type="text"
+                        placeholder="🔍 Search by filename, path, or rule..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="input w-full pl-3 pr-8"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                        >
+                            ✕
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -89,7 +130,7 @@ export default function PreviewPanel({
                         </tr>
                     </thead>
                     <tbody>
-                        {changes.map((change, index) => (
+                        {filteredChanges.map((change) => (
                             <tr
                                 key={change.file.id}
                                 className={
@@ -104,17 +145,23 @@ export default function PreviewPanel({
                                     <input
                                         type="checkbox"
                                         checked={change.selected}
-                                        onChange={() => onToggleChange(index)}
+                                        onChange={() => onToggleChange(getOriginalIndex(change))}
                                         disabled={change.status !== 'pending'}
                                         className="rounded border-slate-300 dark:border-slate-600"
                                     />
                                 </td>
                                 <td>
                                     <div className="max-w-[200px]">
-                                        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                                        <p
+                                            className="text-sm font-medium text-slate-900 dark:text-white truncate cursor-help"
+                                            title={change.currentPath}
+                                        >
                                             {change.currentName}
                                         </p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate font-mono">
+                                        <p
+                                            className="text-xs text-slate-500 dark:text-slate-400 truncate font-mono cursor-help"
+                                            title={`Current: ${change.currentPath}`}
+                                        >
                                             {change.currentPath}
                                         </p>
                                     </div>
@@ -122,10 +169,16 @@ export default function PreviewPanel({
                                 <td className="text-center text-slate-400">→</td>
                                 <td>
                                     <div className="max-w-[200px]">
-                                        <p className="text-sm font-medium text-primary-600 dark:text-primary-400 truncate">
+                                        <p
+                                            className="text-sm font-medium text-primary-600 dark:text-primary-400 truncate cursor-help"
+                                            title={change.proposedPath}
+                                        >
                                             {change.proposedName}
                                         </p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate font-mono">
+                                        <p
+                                            className="text-xs text-slate-500 dark:text-slate-400 truncate font-mono cursor-help"
+                                            title={`Proposed: ${change.proposedPath}`}
+                                        >
                                             {change.proposedPath}
                                         </p>
                                     </div>
