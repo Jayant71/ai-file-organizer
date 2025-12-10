@@ -108,3 +108,50 @@ export interface DriveOperationResult {
   /** Error message (if failed) */
   error?: string;
 }
+
+/**
+ * Represents a proposed change to a Drive file.
+ */
+export interface DriveChange {
+  /** Original Drive file */
+  file: DriveFile;
+  /** Current parent folder ID */
+  currentParentId: string;
+  /** Current parent folder name (for display) */
+  currentParentName: string;
+  /** Proposed new parent folder ID */
+  proposedParentId: string;
+  /** Proposed new parent folder name (for display) */
+  proposedParentName: string;
+  /** Reason for the change (rule name or AI reason) */
+  reason: string;
+  /** Whether this change is selected for execution */
+  selected: boolean;
+  /** Status of the operation */
+  status: 'pending' | 'success' | 'error' | 'skipped';
+  /** Error message if operation failed */
+  errorMessage?: string;
+}
+
+/**
+ * Convert a DriveFile to FileMeta format for rule engine compatibility.
+ */
+export function driveFileToFileMeta(driveFile: DriveFile, parentPath: string = 'My Drive'): import('./file').FileMeta {
+  // Extract extension from name
+  const lastDot = driveFile.name.lastIndexOf('.');
+  const extension = lastDot > 0 ? driveFile.name.slice(lastDot).toLowerCase() : '';
+
+  return {
+    id: driveFile.id,
+    path: `${parentPath}/${driveFile.name}`,
+    name: driveFile.name,
+    extension,
+    size: driveFile.size || 0,
+    createdTime: driveFile.createdTime,
+    modifiedTime: driveFile.modifiedTime,
+    mimeType: driveFile.mimeType,
+    isDirectory: driveFile.isFolder,
+    source: 'drive',
+    parentPath,
+  };
+}
