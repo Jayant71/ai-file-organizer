@@ -11,7 +11,6 @@
 import { ipcMain, shell, BrowserWindow } from 'electron';
 import { google, drive_v3 } from 'googleapis';
 import Store from 'electron-store';
-import { v4 as uuidv4 } from 'uuid';
 import { IPC_CHANNELS } from '../../../src/services/config';
 import { DriveFile, DriveAuthState, DriveListOptions } from '../../../src/domain/types/drive';
 

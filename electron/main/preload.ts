@@ -19,6 +19,7 @@ export interface ElectronAPI {
   renameFile: (filePath: string, newName: string) => Promise<{ success: boolean; error?: string }>;
   createFolder: (folderPath: string) => Promise<{ success: boolean; error?: string }>;
   checkPathExists: (path: string) => Promise<boolean>;
+  readFileSample: (filePath: string, maxBytes?: number) => Promise<{ success: boolean; content?: string | null; error?: string }>;
 
   // Google Drive operations
   driveAuth: () => Promise<{ success: boolean; error?: string }>;
@@ -51,6 +52,8 @@ const api: ElectronAPI = {
     ipcRenderer.invoke(IPC_CHANNELS.FS_CREATE_FOLDER, folderPath),
   checkPathExists: (path) => 
     ipcRenderer.invoke(IPC_CHANNELS.FS_CHECK_PATH_EXISTS, path),
+  readFileSample: (filePath, maxBytes) => 
+    ipcRenderer.invoke(IPC_CHANNELS.FS_READ_FILE_SAMPLE, filePath, maxBytes),
 
   // Google Drive operations
   driveAuth: () => ipcRenderer.invoke(IPC_CHANNELS.DRIVE_AUTH),
