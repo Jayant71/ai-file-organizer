@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { Rule, DEFAULT_RULES } from '@/domain/types/rule';
+import { Rule, DEFAULT_RULES, Condition, ConditionType, ConditionOperator } from '@/domain/types/rule';
 import { v4 as uuidv4 } from 'uuid';
 
 interface RulesContextType {
@@ -23,6 +23,53 @@ const RulesContext = createContext<RulesContextType | undefined>(undefined);
 // Storage key for persisting rules
 const RULES_STORAGE_KEY = 'smart-file-organizer-rules';
 
+// Valid operators for each condition type
+const VALID_OPERATORS: Record<ConditionType, ConditionOperator[]> = {
+    category: ['equals', 'notEquals', 'in', 'notIn'],
+    extension: ['in', 'notIn', 'equals', 'notEquals'],
+    size: ['gt', 'lt', 'gte', 'lte', 'equals'],
+    age: ['gt', 'lt', 'gte', 'lte', 'equals'],
+    name: ['contains', 'startsWith', 'endsWith', 'equals', 'notEquals'],
+    path: ['contains', 'startsWith', 'endsWith', 'equals', 'notEquals'],
+};
+
+// Default operator for each condition type
+const DEFAULT_OPERATORS: Record<ConditionType, ConditionOperator> = {
+    category: 'equals',
+    extension: 'in',
+    size: 'gt',
+    age: 'gt',
+    name: 'contains',
+    path: 'contains',
+};
+
+/**
+ * Migrate and fix conditions with invalid operator combinations.
+ * This fixes rules created before the bug fix where changing condition type
+ * didn't reset the operator properly.
+ */
+function migrateConditions(conditions: Condition[]): { conditions: Condition[]; migrated: boolean } {
+    let migrated = false;
+
+    const fixedConditions = conditions.map((condition) => {
+        const validOps = VALID_OPERATORS[condition.type];
+
+        // If operator is not valid for this type, set to default
+        if (!validOps || !validOps.includes(condition.operator)) {
+            console.log(`Migrating condition: type=${condition.type}, invalid operator=${condition.operator} -> ${DEFAULT_OPERATORS[condition.type]}`);
+            migrated = true;
+            return {
+                ...condition,
+                operator: DEFAULT_OPERATORS[condition.type],
+            };
+        }
+
+        return condition;
+    });
+
+    return { conditions: fixedConditions, migrated };
+}
+
 export function RulesProvider({ children }: { children: React.ReactNode }) {
     const [rules, setRules] = useState<Rule[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -34,13 +81,29 @@ export function RulesProvider({ children }: { children: React.ReactNode }) {
                 const stored = localStorage.getItem(RULES_STORAGE_KEY);
                 if (stored) {
                     const parsed = JSON.parse(stored);
-                    // Convert date strings back to Date objects
-                    const rulesWithDates = parsed.map((rule: any) => ({
-                        ...rule,
-                        createdAt: new Date(rule.createdAt),
-                        updatedAt: new Date(rule.updatedAt),
-                    }));
+                    let needsSave = false;
+
+                    // Convert date strings back to Date objects and migrate conditions
+                    const rulesWithDates = parsed.map((rule: any) => {
+                        const { conditions, migrated } = migrateConditions(rule.conditions || []);
+                        if (migrated) {
+                            needsSave = true;
+                        }
+                        return {
+                            ...rule,
+                            conditions,
+                            createdAt: new Date(rule.createdAt),
+                            updatedAt: new Date(rule.updatedAt),
+                        };
+                    });
+
                     setRules(rulesWithDates);
+
+                    // Save back if any rules were migrated
+                    if (needsSave) {
+                        console.log('Saving migrated rules to storage');
+                        localStorage.setItem(RULES_STORAGE_KEY, JSON.stringify(rulesWithDates));
+                    }
                 } else {
                     // Initialize with default rules
                     const now = new Date();
