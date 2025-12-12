@@ -1,12 +1,12 @@
 /**
  * Rule Form Component
- * Form for creating and editing rules.
+ * Form for creating and editing rules with beginner-friendly guidance.
  */
 
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Rule, Condition, Action, ConditionType, ActionType, RuleScope, ConditionOperator } from '@/domain/types/rule';
-import { Button } from '../common';
+import { Button, HelpIcon } from '../common';
 
 interface RuleFormProps {
     initialRule?: Rule;
@@ -77,15 +77,15 @@ export default function RuleForm({ initialRule, onSave, onCancel }: RuleFormProp
         const newErrors: Record<string, string> = {};
 
         if (!name.trim()) {
-            newErrors.name = 'Name is required';
+            newErrors.name = 'Please give your rule a name';
         }
 
         if (conditions.length === 0) {
-            newErrors.conditions = 'At least one condition is required';
+            newErrors.conditions = 'Tell us when this rule should apply (add at least one condition)';
         }
 
         if (actions.length === 0) {
-            newErrors.actions = 'At least one action is required';
+            newErrors.actions = 'Tell us what to do with matching files (add at least one action)';
         }
 
         if (Object.keys(newErrors).length > 0) {
@@ -110,13 +110,14 @@ export default function RuleForm({ initialRule, onSave, onCancel }: RuleFormProp
             <div className="space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        Rule Name *
+                        Rule Name
+                        <HelpIcon tooltip="Give your rule a descriptive name so you remember what it does" />
                     </label>
                     <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g., Organize Documents"
+                        placeholder='e.g., "Sort my PDFs", "Organize photos by date"'
                         className={`input ${errors.name ? 'border-red-500' : ''}`}
                     />
                     {errors.name && (
@@ -126,12 +127,12 @@ export default function RuleForm({ initialRule, onSave, onCancel }: RuleFormProp
 
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                        Description
+                        Description (optional)
                     </label>
                     <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="What does this rule do?"
+                        placeholder="Notes about what this rule does..."
                         rows={2}
                         className="input"
                     />
@@ -140,21 +141,22 @@ export default function RuleForm({ initialRule, onSave, onCancel }: RuleFormProp
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                            Scope
+                            Where to apply
+                            <HelpIcon tooltip="Choose where this rule should work: your computer, Google Drive, or both" />
                         </label>
                         <select
                             value={scope}
                             onChange={(e) => setScope(e.target.value as RuleScope)}
                             className="input"
                         >
-                            <option value="local">Local Files Only</option>
-                            <option value="drive">Google Drive Only</option>
-                            <option value="both">Both</option>
+                            <option value="local">📁 My Computer</option>
+                            <option value="drive">☁️ Google Drive</option>
+                            <option value="both">🔄 Both</option>
                         </select>
                     </div>
 
                     <div className="flex items-end">
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
                             <input
                                 type="checkbox"
                                 checked={enabled}
@@ -162,7 +164,7 @@ export default function RuleForm({ initialRule, onSave, onCancel }: RuleFormProp
                                 className="rounded border-slate-300 dark:border-slate-600"
                             />
                             <span className="text-sm text-slate-700 dark:text-slate-300">
-                                Enable rule
+                                Enable this rule
                             </span>
                         </label>
                     </div>
@@ -170,31 +172,41 @@ export default function RuleForm({ initialRule, onSave, onCancel }: RuleFormProp
             </div>
 
             {/* Conditions */}
-            <div>
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Conditions (When)
-                    </h3>
-                    <Button onClick={addCondition} variant="ghost" size="sm">
+                    <div>
+                        <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300 flex items-center gap-2">
+                            🎯 When should this rule apply?
+                        </h3>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+                            Add conditions to tell us which files this rule applies to
+                        </p>
+                    </div>
+                    <Button onClick={addCondition} variant="secondary" size="sm">
                         + Add Condition
                     </Button>
                 </div>
 
                 {errors.conditions && (
-                    <p className="text-xs text-red-500 mb-2">{errors.conditions}</p>
+                    <p className="text-xs text-red-500 mb-2 bg-red-50 dark:bg-red-900/30 p-2 rounded">{errors.conditions}</p>
                 )}
 
                 {conditions.length === 0 ? (
-                    <p className="text-sm text-slate-400 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg text-center">
-                        No conditions yet. Add a condition to specify which files this rule
-                        applies to.
-                    </p>
+                    <div className="text-center py-6 bg-white dark:bg-slate-800 rounded-lg">
+                        <p className="text-slate-500 dark:text-slate-400 mb-2">
+                            No conditions yet
+                        </p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">
+                            Click "+ Add Condition" to specify which files this rule applies to
+                        </p>
+                    </div>
                 ) : (
                     <div className="space-y-2">
-                        {conditions.map((condition) => (
+                        {conditions.map((condition, index) => (
                             <ConditionRow
                                 key={condition.id}
                                 condition={condition}
+                                isFirst={index === 0}
                                 onUpdate={(updates) => updateCondition(condition.id, updates)}
                                 onRemove={() => removeCondition(condition.id)}
                             />
@@ -204,25 +216,34 @@ export default function RuleForm({ initialRule, onSave, onCancel }: RuleFormProp
             </div>
 
             {/* Actions */}
-            <div>
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Actions (Then)
-                    </h3>
-                    <Button onClick={addAction} variant="ghost" size="sm">
+                    <div>
+                        <h3 className="text-sm font-medium text-green-800 dark:text-green-300 flex items-center gap-2">
+                            ✨ What should happen to matching files?
+                        </h3>
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
+                            Add actions to tell us what to do with files that match
+                        </p>
+                    </div>
+                    <Button onClick={addAction} variant="secondary" size="sm">
                         + Add Action
                     </Button>
                 </div>
 
                 {errors.actions && (
-                    <p className="text-xs text-red-500 mb-2">{errors.actions}</p>
+                    <p className="text-xs text-red-500 mb-2 bg-red-50 dark:bg-red-900/30 p-2 rounded">{errors.actions}</p>
                 )}
 
                 {actions.length === 0 ? (
-                    <p className="text-sm text-slate-400 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg text-center">
-                        No actions yet. Add an action to specify what to do with matching
-                        files.
-                    </p>
+                    <div className="text-center py-6 bg-white dark:bg-slate-800 rounded-lg">
+                        <p className="text-slate-500 dark:text-slate-400 mb-2">
+                            No actions yet
+                        </p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">
+                            Click "+ Add Action" to specify what to do with matching files
+                        </p>
+                    </div>
                 ) : (
                     <div className="space-y-2">
                         {actions.map((action) => (
@@ -243,7 +264,7 @@ export default function RuleForm({ initialRule, onSave, onCancel }: RuleFormProp
                     Cancel
                 </Button>
                 <Button onClick={handleSave} variant="primary">
-                    {initialRule ? 'Update Rule' : 'Create Rule'}
+                    {initialRule ? '✓ Save Changes' : '✨ Create Rule'}
                 </Button>
             </div>
         </div>
@@ -253,22 +274,26 @@ export default function RuleForm({ initialRule, onSave, onCancel }: RuleFormProp
 // Condition row component
 function ConditionRow({
     condition,
+    isFirst,
     onUpdate,
     onRemove,
 }: {
     condition: Condition;
+    isFirst: boolean;
     onUpdate: (updates: Partial<Condition>) => void;
     onRemove: () => void;
 }) {
-    const conditionTypes: { value: ConditionType; label: string }[] = [
-        { value: 'category', label: 'File Category' },
-        { value: 'extension', label: 'File Extension' },
-        { value: 'size', label: 'File Size' },
-        { value: 'age', label: 'File Age' },
-        { value: 'name', label: 'File Name' },
-        { value: 'path', label: 'File Path' },
+    // User-friendly condition types
+    const conditionTypes: { value: ConditionType; label: string; icon: string; hint: string }[] = [
+        { value: 'category', label: 'File Type', icon: '📂', hint: 'Documents, Images, Videos, etc.' },
+        { value: 'extension', label: 'File Extension', icon: '📎', hint: '.pdf, .docx, .jpg, etc.' },
+        { value: 'size', label: 'File Size', icon: '📊', hint: 'Larger or smaller than...' },
+        { value: 'age', label: 'File Age', icon: '📅', hint: 'How old is the file' },
+        { value: 'name', label: 'File Name', icon: '📝', hint: 'Name contains, starts with...' },
+        { value: 'path', label: 'Folder Location', icon: '📁', hint: 'Where the file is located' },
     ];
 
+    // User-friendly operators
     const operators: Record<string, { value: ConditionOperator; label: string }[]> = {
         category: [
             { value: 'equals', label: 'is' },
@@ -279,12 +304,12 @@ function ConditionRow({
             { value: 'notIn', label: 'is not one of' },
         ],
         size: [
-            { value: 'gt', label: 'greater than' },
-            { value: 'lt', label: 'less than' },
+            { value: 'gt', label: 'is bigger than' },
+            { value: 'lt', label: 'is smaller than' },
         ],
         age: [
-            { value: 'gt', label: 'more than (days)' },
-            { value: 'lt', label: 'less than (days)' },
+            { value: 'gt', label: 'is older than' },
+            { value: 'lt', label: 'is newer than' },
         ],
         name: [
             { value: 'contains', label: 'contains' },
@@ -297,96 +322,117 @@ function ConditionRow({
         ],
     };
 
+    // User-friendly category names
     const categories = [
-        'documents', 'images', 'videos', 'audio', 'archives', 'code', 'other'
+        { value: 'documents', label: '📄 Documents' },
+        { value: 'images', label: '🖼️ Images' },
+        { value: 'videos', label: '🎬 Videos' },
+        { value: 'audio', label: '🎵 Audio' },
+        { value: 'archives', label: '📦 Archives (ZIP, etc.)' },
+        { value: 'code', label: '💻 Code Files' },
+        { value: 'other', label: '📎 Other' },
     ];
 
     return (
-        <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-            <select
-                value={condition.type}
-                onChange={(e) => {
-                    const newType = e.target.value as ConditionType;
-                    // Reset operator and value when type changes to ensure valid defaults
-                    const defaultOperatorMap: Record<ConditionType, ConditionOperator> = {
-                        category: 'equals',
-                        extension: 'in',
-                        size: 'gt',
-                        age: 'gt',
-                        name: 'contains',
-                        path: 'contains',
-                    };
-                    const defaultValueMap: Record<ConditionType, string> = {
-                        category: 'documents',
-                        extension: '',
-                        size: '',
-                        age: '',
-                        name: '',
-                        path: '',
-                    };
-                    onUpdate({
-                        type: newType,
-                        operator: defaultOperatorMap[newType],
-                        value: defaultValueMap[newType],
-                    });
-                }}
-                className="input w-auto"
-            >
-                {conditionTypes.map((t) => (
-                    <option key={t.value} value={t.value}>
-                        {t.label}
-                    </option>
-                ))}
-            </select>
+        <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-blue-100 dark:border-blue-900">
+            {!isFirst && (
+                <p className="text-xs text-slate-400 mb-2">AND</p>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-slate-600 dark:text-slate-400">If the</span>
 
-            <select
-                value={condition.operator}
-                onChange={(e) => onUpdate({ operator: e.target.value as ConditionOperator })}
-                className="input w-auto"
-            >
-                {(operators[condition.type] || operators.name).map((op) => (
-                    <option key={op.value} value={op.value}>
-                        {op.label}
-                    </option>
-                ))}
-            </select>
-
-            {condition.type === 'category' ? (
                 <select
-                    value={String(condition.value)}
-                    onChange={(e) => onUpdate({ value: e.target.value })}
-                    className="input flex-1"
+                    value={condition.type}
+                    onChange={(e) => {
+                        const newType = e.target.value as ConditionType;
+                        const defaultOperatorMap: Record<ConditionType, ConditionOperator> = {
+                            category: 'equals',
+                            extension: 'in',
+                            size: 'gt',
+                            age: 'gt',
+                            name: 'contains',
+                            path: 'contains',
+                        };
+                        const defaultValueMap: Record<ConditionType, string> = {
+                            category: 'documents',
+                            extension: '',
+                            size: '',
+                            age: '',
+                            name: '',
+                            path: '',
+                        };
+                        onUpdate({
+                            type: newType,
+                            operator: defaultOperatorMap[newType],
+                            value: defaultValueMap[newType],
+                        });
+                    }}
+                    className="input w-auto text-sm"
                 >
-                    {categories.map((cat) => (
-                        <option key={cat} value={cat}>
-                            {cat}
+                    {conditionTypes.map((t) => (
+                        <option key={t.value} value={t.value}>
+                            {t.icon} {t.label}
                         </option>
                     ))}
                 </select>
-            ) : (
-                <input
-                    type={condition.type === 'size' || condition.type === 'age' ? 'number' : 'text'}
-                    value={String(condition.value)}
-                    onChange={(e) => onUpdate({ value: e.target.value })}
-                    placeholder={
-                        condition.type === 'extension'
-                            ? '.pdf, .docx, .txt'
-                            : condition.type === 'size'
-                                ? 'Size in bytes'
-                                : condition.type === 'age'
-                                    ? 'Days'
-                                    : 'Value'
-                    }
-                    className="input flex-1"
-                />
-            )}
 
-            <button
-                onClick={onRemove}
-                className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-            >
-                ✕
-            </button>
+                <select
+                    value={condition.operator}
+                    onChange={(e) => onUpdate({ operator: e.target.value as ConditionOperator })}
+                    className="input w-auto text-sm"
+                >
+                    {(operators[condition.type] || operators.name).map((op) => (
+                        <option key={op.value} value={op.value}>
+                            {op.label}
+                        </option>
+                    ))}
+                </select>
+
+                {condition.type === 'category' ? (
+                    <select
+                        value={String(condition.value)}
+                        onChange={(e) => onUpdate({ value: e.target.value })}
+                        className="input flex-1 min-w-[150px] text-sm"
+                    >
+                        {categories.map((cat) => (
+                            <option key={cat.value} value={cat.value}>
+                                {cat.label}
+                            </option>
+                        ))}
+                    </select>
+                ) : (
+                    <input
+                        type={condition.type === 'size' || condition.type === 'age' ? 'number' : 'text'}
+                        value={String(condition.value)}
+                        onChange={(e) => onUpdate({ value: e.target.value })}
+                        placeholder={
+                            condition.type === 'extension'
+                                ? '.pdf, .docx, .txt'
+                                : condition.type === 'size'
+                                    ? 'Size in MB'
+                                    : condition.type === 'age'
+                                        ? 'Number of days'
+                                        : 'Enter text...'
+                        }
+                        className="input flex-1 min-w-[120px] text-sm"
+                    />
+                )}
+
+                {condition.type === 'size' && (
+                    <span className="text-sm text-slate-500">MB</span>
+                )}
+                {condition.type === 'age' && (
+                    <span className="text-sm text-slate-500">days</span>
+                )}
+
+                <button
+                    onClick={onRemove}
+                    className="p-1.5 text-slate-400 hover:text-red-500 transition-colors rounded hover:bg-red-50 dark:hover:bg-red-900/30"
+                    title="Remove condition"
+                >
+                    ✕
+                </button>
+            </div>
         </div>
     );
 }
@@ -401,75 +447,95 @@ function ActionRow({
     onUpdate: (updates: Partial<Action>) => void;
     onRemove: () => void;
 }) {
-    const actionTypes: { value: ActionType; label: string }[] = [
-        { value: 'move', label: 'Move to folder' },
-        { value: 'moveByDate', label: 'Move by date' },
-        { value: 'moveByCategory', label: 'Move by category' },
-        { value: 'rename', label: 'Rename file' },
+    // User-friendly action types
+    const actionTypes: { value: ActionType; label: string; icon: string }[] = [
+        { value: 'move', label: 'Move to folder', icon: '📂' },
+        { value: 'moveByDate', label: 'Organize by date', icon: '📅' },
+        { value: 'moveByCategory', label: 'Sort by category', icon: '📁' },
+        { value: 'rename', label: 'Rename file', icon: '✏️' },
     ];
 
     return (
-        <div className="flex items-center gap-2 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-            <select
-                value={action.type}
-                onChange={(e) => onUpdate({ type: e.target.value as ActionType })}
-                className="input w-auto"
-            >
-                {actionTypes.map((t) => (
-                    <option key={t.value} value={t.value}>
-                        {t.label}
-                    </option>
-                ))}
-            </select>
+        <div className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-green-100 dark:border-green-900">
+            <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-slate-600 dark:text-slate-400">Then</span>
 
-            {(action.type === 'move' || action.type === 'moveByDate' || action.type === 'moveByCategory') && (
-                <input
-                    type="text"
-                    value={action.params.targetFolder || ''}
-                    onChange={(e) =>
-                        onUpdate({
-                            params: { ...action.params, targetFolder: e.target.value },
-                        })
-                    }
-                    placeholder="Target folder (e.g., Documents/Organized)"
-                    className="input flex-1"
-                />
-            )}
+                <select
+                    value={action.type}
+                    onChange={(e) => onUpdate({ type: e.target.value as ActionType })}
+                    className="input w-auto text-sm"
+                >
+                    {actionTypes.map((t) => (
+                        <option key={t.value} value={t.value}>
+                            {t.icon} {t.label}
+                        </option>
+                    ))}
+                </select>
 
-            {action.type === 'moveByDate' && (
-                <input
-                    type="text"
-                    value={action.params.dateFormat || 'YYYY/MM'}
-                    onChange={(e) =>
-                        onUpdate({
-                            params: { ...action.params, dateFormat: e.target.value },
-                        })
-                    }
-                    placeholder="Date format (e.g., YYYY/MM)"
-                    className="input w-32"
-                />
-            )}
+                {(action.type === 'move' || action.type === 'moveByDate' || action.type === 'moveByCategory') && (
+                    <>
+                        <span className="text-sm text-slate-500">to</span>
+                        <input
+                            type="text"
+                            value={action.params.targetFolder || ''}
+                            onChange={(e) =>
+                                onUpdate({
+                                    params: { ...action.params, targetFolder: e.target.value },
+                                })
+                            }
+                            placeholder='e.g., "Documents", "Sorted Files"'
+                            className="input flex-1 min-w-[150px] text-sm"
+                        />
+                    </>
+                )}
 
-            {action.type === 'rename' && (
-                <input
-                    type="text"
-                    value={action.params.renamePattern || ''}
-                    onChange={(e) =>
-                        onUpdate({
-                            params: { ...action.params, renamePattern: e.target.value },
-                        })
-                    }
-                    placeholder="{name}_{date}{ext}"
-                    className="input flex-1"
-                />
-            )}
+                {action.type === 'moveByDate' && (
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-slate-500">using format</span>
+                        <select
+                            value={action.params.dateFormat || 'YYYY/MM'}
+                            onChange={(e) =>
+                                onUpdate({
+                                    params: { ...action.params, dateFormat: e.target.value },
+                                })
+                            }
+                            className="input w-auto text-sm"
+                        >
+                            <option value="YYYY">📅 Year (2024)</option>
+                            <option value="YYYY/MM">📅 Year/Month (2024/01)</option>
+                            <option value="YYYY/MM/DD">📅 Year/Month/Day</option>
+                        </select>
+                    </div>
+                )}
 
-            <button
-                onClick={onRemove}
-                className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-            >
-                ✕
-            </button>
+                {action.type === 'rename' && (
+                    <>
+                        <span className="text-sm text-slate-500">with pattern</span>
+                        <input
+                            type="text"
+                            value={action.params.renamePattern || ''}
+                            onChange={(e) =>
+                                onUpdate({
+                                    params: { ...action.params, renamePattern: e.target.value },
+                                })
+                            }
+                            placeholder="{name}_{date}{ext}"
+                            className="input flex-1 min-w-[150px] text-sm"
+                        />
+                        <span className="text-xs text-slate-400">
+                            Use {'{name}'}, {'{date}'}, {'{ext}'}
+                        </span>
+                    </>
+                )}
+
+                <button
+                    onClick={onRemove}
+                    className="p-1.5 text-slate-400 hover:text-red-500 transition-colors rounded hover:bg-red-50 dark:hover:bg-red-900/30"
+                    title="Remove action"
+                >
+                    ✕
+                </button>
+            </div>
         </div>
     );
 }

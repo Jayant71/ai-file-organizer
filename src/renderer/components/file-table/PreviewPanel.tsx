@@ -26,27 +26,52 @@ export default function PreviewPanel({
 }: PreviewPanelProps) {
     const [searchQuery, setSearchQuery] = useState('');
 
+    // Filter out any invalid changes - memoized
+    const validChanges = useMemo(() => {
+        if (!changes || !Array.isArray(changes)) return [];
+        return changes.filter(c =>
+            c && c.file && c.file.id && c.currentPath && c.proposedPath
+        );
+    }, [changes]);
+
     // Filter changes based on search query
     const filteredChanges = useMemo(() => {
-        if (!searchQuery.trim()) return changes;
+        if (!searchQuery.trim()) return validChanges;
         const query = searchQuery.toLowerCase();
-        return changes.filter(c =>
-            c.currentName.toLowerCase().includes(query) ||
-            c.currentPath.toLowerCase().includes(query) ||
-            c.proposedPath.toLowerCase().includes(query) ||
+        return validChanges.filter(c =>
+            c.currentName?.toLowerCase().includes(query) ||
+            c.currentPath?.toLowerCase().includes(query) ||
+            c.proposedPath?.toLowerCase().includes(query) ||
             c.matchedRule?.toLowerCase().includes(query)
         );
-    }, [changes, searchQuery]);
+    }, [validChanges, searchQuery]);
 
     // Get original index for toggle callback
     const getOriginalIndex = (change: FileChange) => {
-        return changes.findIndex(c => c.file.id === change.file.id);
+        if (!changes || !Array.isArray(changes)) return -1;
+        return changes.findIndex(c => c?.file?.id === change?.file?.id);
     };
 
-    const selectedCount = changes.filter((c) => c.selected).length;
-    const pendingCount = changes.filter((c) => c.status === 'pending').length;
-    const allSelected = selectedCount === changes.length;
+    const selectedCount = useMemo(() => validChanges.filter((c) => c.selected).length, [validChanges]);
+    const pendingCount = useMemo(() => validChanges.filter((c) => c.status === 'pending').length, [validChanges]);
+    const allSelected = selectedCount === validChanges.length && validChanges.length > 0;
     const noneSelected = selectedCount === 0;
+
+    // Safety check - show error if no valid changes
+    if (validChanges.length === 0) {
+        return (
+            <div className="card p-6 text-center">
+                <p className="text-amber-500 mb-2">⚠️ No valid changes to preview</p>
+                <p className="text-sm text-slate-500">The structure analysis didn't find any files to organize.</p>
+                <button
+                    onClick={onClose}
+                    className="mt-4 px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg text-sm"
+                >
+                    Go Back
+                </button>
+            </div>
+        );
+    }
 
     const getStatusBadge = (status: FileChange['status']) => {
         switch (status) {
@@ -61,6 +86,7 @@ export default function PreviewPanel({
         }
     };
 
+
     return (
         <div className="card border-2 border-primary-500/30">
             {/* Header */}
@@ -71,7 +97,7 @@ export default function PreviewPanel({
                             📋 Preview Changes
                         </h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {selectedCount} of {changes.length} changes selected
+                            {selectedCount} of {validChanges.length} changes selected
                             {searchQuery && ` (showing ${filteredChanges.length})`}
                         </p>
                     </div>
@@ -141,7 +167,7 @@ export default function PreviewPanel({
                                             : ''
                                 }
                             >
-                                <td>
+                                <td className="align-top pt-3">
                                     <input
                                         type="checkbox"
                                         checked={change.selected}
@@ -150,45 +176,33 @@ export default function PreviewPanel({
                                         className="rounded border-slate-300 dark:border-slate-600"
                                     />
                                 </td>
-                                <td>
-                                    <div className="max-w-[200px]">
-                                        <p
-                                            className="text-sm font-medium text-slate-900 dark:text-white truncate cursor-help"
-                                            title={change.currentPath}
-                                        >
+                                <td className="align-top">
+                                    <div className="max-w-[280px]">
+                                        <p className="text-sm font-medium text-slate-900 dark:text-white">
                                             {change.currentName}
                                         </p>
-                                        <p
-                                            className="text-xs text-slate-500 dark:text-slate-400 truncate font-mono cursor-help"
-                                            title={`Current: ${change.currentPath}`}
-                                        >
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono break-all whitespace-normal leading-relaxed mt-1">
                                             {change.currentPath}
                                         </p>
                                     </div>
                                 </td>
-                                <td className="text-center text-slate-400">→</td>
-                                <td>
-                                    <div className="max-w-[200px]">
-                                        <p
-                                            className="text-sm font-medium text-primary-600 dark:text-primary-400 truncate cursor-help"
-                                            title={change.proposedPath}
-                                        >
+                                <td className="text-center text-slate-400 align-top pt-3">→</td>
+                                <td className="align-top">
+                                    <div className="max-w-[280px]">
+                                        <p className="text-sm font-medium text-primary-600 dark:text-primary-400">
                                             {change.proposedName}
                                         </p>
-                                        <p
-                                            className="text-xs text-slate-500 dark:text-slate-400 truncate font-mono cursor-help"
-                                            title={`Proposed: ${change.proposedPath}`}
-                                        >
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono break-all whitespace-normal leading-relaxed mt-1">
                                             {change.proposedPath}
                                         </p>
                                     </div>
                                 </td>
-                                <td>
+                                <td className="align-top pt-2">
                                     <span className="text-xs text-slate-600 dark:text-slate-400">
                                         {change.matchedRule}
                                     </span>
                                 </td>
-                                <td>{getStatusBadge(change.status)}</td>
+                                <td className="align-top pt-2">{getStatusBadge(change.status)}</td>
                             </tr>
                         ))}
                     </tbody>

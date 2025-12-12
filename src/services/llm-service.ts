@@ -15,7 +15,7 @@ import type {
 import type { FileMeta } from '@/domain/types/file';
 
 // Batch size for processing large folders
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 25;
 
 // Default OpenAI model
 const DEFAULT_MODEL = 'gpt-4.1-2025-04-14';

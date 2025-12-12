@@ -10,6 +10,7 @@ import './index.css';
 import { ThemeProvider } from './context/ThemeContext';
 import { RulesProvider } from './context/RulesContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { FileOrganizerProvider } from './context/FileOrganizerContext';
 
 // Render the application
 // Using HashRouter for Electron compatibility (file:// protocol)
@@ -19,7 +20,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <ThemeProvider>
                 <SettingsProvider>
                     <RulesProvider>
-                        <App />
+                        <FileOrganizerProvider>
+                            <App />
+                        </FileOrganizerProvider>
                     </RulesProvider>
                 </SettingsProvider>
             </ThemeProvider>

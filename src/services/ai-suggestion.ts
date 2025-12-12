@@ -422,7 +422,7 @@ export class AISuggestionService {
   constructor(config?: Partial<AIServiceConfig>) {
     this.config = {
       provider: 'heuristic',
-      batchSize: 50,
+      batchSize: 25,
       ...config,
     };
     
