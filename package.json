@@ -1,6 +1,6 @@
 {
   "name": "smart-file-organizer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Cross-platform desktop app to organize local files and Google Drive",
   "main": "dist-electron/main/index.js",
   "author": "Smart File Organizer",
