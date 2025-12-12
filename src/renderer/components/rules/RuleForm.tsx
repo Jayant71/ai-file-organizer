@@ -305,7 +305,31 @@ function ConditionRow({
         <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
             <select
                 value={condition.type}
-                onChange={(e) => onUpdate({ type: e.target.value as ConditionType })}
+                onChange={(e) => {
+                    const newType = e.target.value as ConditionType;
+                    // Reset operator and value when type changes to ensure valid defaults
+                    const defaultOperatorMap: Record<ConditionType, ConditionOperator> = {
+                        category: 'equals',
+                        extension: 'in',
+                        size: 'gt',
+                        age: 'gt',
+                        name: 'contains',
+                        path: 'contains',
+                    };
+                    const defaultValueMap: Record<ConditionType, string> = {
+                        category: 'documents',
+                        extension: '',
+                        size: '',
+                        age: '',
+                        name: '',
+                        path: '',
+                    };
+                    onUpdate({
+                        type: newType,
+                        operator: defaultOperatorMap[newType],
+                        value: defaultValueMap[newType],
+                    });
+                }}
                 className="input w-auto"
             >
                 {conditionTypes.map((t) => (
