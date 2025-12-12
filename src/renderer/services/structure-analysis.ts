@@ -95,7 +95,8 @@ export function createCompactSummary(files: FileMeta[]): {
         const sampleFiles: string[] = [];
 
         folderFiles.forEach(file => {
-            const ext = file.extension?.toLowerCase() || 'unknown';
+            // Strip the leading dot from extension (e.g., '.pdf' -> 'pdf')
+            const ext = (file.extension?.toLowerCase() || 'unknown').replace(/^\./, '');
             const category = getFileCategory(ext);
             categories[category] = (categories[category] || 0) + 1;
             globalCategories[category] = (globalCategories[category] || 0) + 1;
@@ -672,6 +673,7 @@ export function applyStructureToFiles(
         const ext = file.extension.toLowerCase().replace('.', '');
         const extWithDot = file.extension.toLowerCase();
         const fileName = file.name.toLowerCase();
+        const fileNameWithoutExt = fileName.replace(/\.[^.]+$/, '');
         const fileCategory = getFileCategory(extWithDot);
         
         let bestMatch: FolderMapping | null = null;
@@ -680,7 +682,66 @@ export function applyStructureToFiles(
         // Find the best matching folder
         for (const mapping of folderMappings) {
             let score = 0;
+            const folderName = mapping.name.toLowerCase();
+            const folderPath = mapping.path.toLowerCase();
             
+            // ===== FILE NAME TO FOLDER NAME MATCHING =====
+            // This is the most important matching - check if file name contains folder keywords
+            
+            // Generate keywords from folder name
+            const folderKeywords = folderName
+                .replace(/[&\/\\-]/g, ' ')  // Replace separators with spaces
+                .split(/\s+/)
+                .filter(k => k.length >= 2);  // Only keywords with 2+ chars
+            
+            // Also add abbreviations/acronyms
+            const folderAbbreviations: Record<string, string[]> = {
+                'artificial intelligence': ['ai', 'ml', 'neural', 'deep learning'],
+                'computer networks': ['cn', 'network', 'tcp', 'ip', 'routing', 'networking'],
+                'digital logic design': ['dld', 'digital', 'logic', 'gates', 'flip', 'flop'],
+                'electronics': ['ecm', 'electronic', 'circuit', 'resistor', 'capacitor'],
+                'mathematics': ['math', 'maths', 'calculus', 'algebra', 'integration'],
+                'ethics & life skills': ['ethics', 'life skills', 'values', 'society'],
+                'syllabus & reference': ['syllabus', 'reference', 'curriculum'],
+                'assignments': ['assignment', 'homework', 'hw', 'task'],
+                'lab work': ['lab', 'practical', 'experiment'],
+                'programming': ['code', 'program', 'cpp', 'python', 'java', 'js'],
+                'documents': ['doc', 'document', 'report', 'paper'],
+                'presentations': ['ppt', 'presentation', 'slides'],
+                'personal': ['personal', 'private', 'my'],
+                'photos': ['photo', 'picture', 'image', 'pic'],
+                'videos': ['video', 'movie', 'clip'],
+                'music': ['music', 'song', 'audio'],
+                'fcb': ['fcb', 'fundamentals'],
+            };
+            
+            // Check for abbreviations and keywords
+            for (const [fullName, abbrevs] of Object.entries(folderAbbreviations)) {
+                if (folderName.includes(fullName.split(' ')[0]) || folderPath.includes(fullName.split(' ')[0])) {
+                    for (const abbrev of abbrevs) {
+                        if (fileNameWithoutExt.includes(abbrev)) {
+                            score += 15;  // High score for keyword match
+                        }
+                    }
+                }
+            }
+            
+            // Check if filename contains any folder keyword
+            for (const keyword of folderKeywords) {
+                if (fileNameWithoutExt.includes(keyword)) {
+                    score += 12;  // Good score for direct keyword match
+                }
+            }
+            
+            // Check if folder name words appear in filename
+            const folderWords = folderName.split(/[\s&\-\/]+/).filter(w => w.length >= 3);
+            for (const word of folderWords) {
+                if (fileNameWithoutExt.includes(word)) {
+                    score += 10;
+                }
+            }
+            
+            // ===== FILE PATTERN MATCHING =====
             // Check file patterns
             for (const pattern of mapping.patterns) {
                 const patternLower = pattern.toLowerCase();
@@ -689,7 +750,7 @@ export function applyStructureToFiles(
                 if (patternLower.startsWith('*.')) {
                     const patternExt = patternLower.substring(2);
                     if (ext === patternExt) {
-                        score += 10;
+                        score += 8;
                     }
                 }
                 
@@ -710,16 +771,17 @@ export function applyStructureToFiles(
                 }
             }
             
+            // ===== CATEGORY MATCHING =====
             // Check category match
             if (mapping.category) {
                 // Direct category match
                 if (fileCategory === mapping.category) {
-                    score += 7;
+                    score += 5;
                 }
                 
                 // Partial category name match
                 if (mapping.category.includes(fileCategory) || fileCategory.includes(mapping.category)) {
-                    score += 5;
+                    score += 3;
                 }
                 
                 // Extension-based category hints
@@ -732,7 +794,7 @@ export function applyStructureToFiles(
                     'audio': ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a'],
                     'music': ['mp3', 'flac', 'wav', 'aac', 'm4a'],
                     'code': ['js', 'ts', 'py', 'java', 'cpp', 'c', 'h', 'css', 'html'],
-                    'programming': ['js', 'ts', 'py', 'java', 'cpp', 'c', 'jsx', 'tsx'],
+                    'programming': ['js', 'ts', 'py', 'java', 'cpp', 'c', 'jsx', 'tsx', 'exe'],
                     'archive': ['zip', 'rar', '7z', 'tar', 'gz'],
                     'presentations': ['ppt', 'pptx', 'key', 'odp'],
                     'pdfs': ['pdf'],
@@ -743,11 +805,12 @@ export function applyStructureToFiles(
                     'lecture': ['pdf', 'ppt', 'pptx'],
                     'personal': ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
                     'academic': ['pdf', 'doc', 'docx', 'ppt', 'pptx'],
+                    'academics': ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xlsx'],
                 };
                 
                 const hints = categoryHints[mapping.category];
                 if (hints && hints.includes(ext)) {
-                    score += 6;
+                    score += 4;
                 }
             }
             
